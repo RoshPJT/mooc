@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MCQ Practice</title>
+<style>
+  :root{
+    --bg:#f3f5f7; --card:#ffffff; --ink:#18212b; --muted:#5d6b7a; --line:#d8dee5;
+    --accent:#1f5eff; --accent-ink:#ffffff; --good:#12805c; --bad:#c2352b; --warn:#a96a00;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#10151b; --card:#19212a; --ink:#e8edf2; --muted:#9aa8b6; --line:#2c3844;
+      --accent:#5b8cff; --accent-ink:#0b1220; --good:#3fc796; --bad:#ff7a6e; --warn:#e0a53a; }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px; line-height:1.5;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:18px;margin:0 0 12px}
+  p.sub{color:var(--muted);margin:0 0 18px}
+  label{display:block;font-weight:600;margin:16px 0 6px}
+  input[type=number]{
+    width:100%;padding:12px;font-size:18px;border:1px solid var(--line);border-radius:8px;
+    background:var(--bg);color:var(--ink);
+  }
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+  .hint{color:var(--muted);font-size:14px;margin-top:6px}
+  .check{display:flex;align-items:center;gap:10px;font-weight:500;margin:14px 0 0}
+  .check input{width:20px;height:20px}
+  button{
+    font:inherit;font-weight:600;border:0;border-radius:10px;padding:14px 18px;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);
+  }
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  button.danger{background:var(--bad);color:#fff}
+  button:disabled{opacity:.4;cursor:default}
+  .full{width:100%;margin-top:22px}
+  .hidden{display:none !important}
+
+  /* exam bar */
+  .bar{
+    position:sticky;top:0;z-index:5;background:var(--bg);
+    padding:calc(env(safe-area-inset-top) + 8px) 0 8px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px}
+  .timer.low{color:var(--bad)}
+  .count{color:var(--muted);font-size:14px}
+  .progress{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+  .progress i{display:block;height:100%;background:var(--accent);width:0}
+
+  .qtext{font-size:18px;font-weight:600;margin:0 0 16px;white-space:pre-wrap}
+  .opt{
+    display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
+    background:var(--bg);color:var(--ink);border:2px solid var(--line);
+    border-radius:10px;padding:12px 14px;margin-bottom:10px;font-weight:500;
+  }
+  .opt .k{
+    flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+  }
+  .opt .t{flex:1;white-space:pre-wrap;overflow-wrap:anywhere}
+  .opt.sel{border-color:var(--accent)}
+  .opt.sel .k{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+  .nav{display:flex;gap:10px;margin-top:14px}
+  .nav button{flex:1}
+  .nav .mid{flex:none}
+
+  /* palette */
+  .palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin:12px 0}
+  .pal{padding:10px 0;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:8px;font-weight:600}
+  .pal.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .pal.cur{outline:3px solid var(--warn);outline-offset:1px}
+
+  /* result */
+  .big{font-size:44px;font-weight:800;margin:4px 0}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+  .stat{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+  .stat b{display:block;font-size:26px}
+  .stat span{color:var(--muted);font-size:13px}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+  .modal .card{max-width:420px;width:100%}
+  .modal .btns{display:flex;gap:10px;margin-top:16px}
+  .modal .btns button{flex:1}
+
+  /* home / mode cards */
+  .mode{
+    display:block;width:100%;text-align:left;margin-top:12px;padding:16px;
+    background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:12px;
+  }
+  .mode b{display:block;font-size:18px;margin-bottom:2px}
+  .mode span{color:var(--muted);font-weight:500;font-size:15px}
+  .mode:active{border-color:var(--accent)}
+
+  /* practice feedback */
+  .opt:disabled{cursor:default;opacity:1}
+  .opt.right{border-color:var(--good);background:color-mix(in srgb, var(--good) 16%, var(--bg))}
+  .opt.right .k{background:var(--good);border-color:var(--good);color:#fff}
+  .opt.wrong{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 16%, var(--bg))}
+  .opt.wrong .k{background:var(--bad);border-color:var(--bad);color:#fff}
+  .verdict{margin-top:6px;padding:12px 14px;border-radius:10px;font-weight:600;border:1px solid var(--line);background:var(--bg)}
+  .verdict.good{border-color:var(--good)}
+  .verdict.bad{border-color:var(--bad)}
+  .verdict small{display:block;font-weight:500;color:var(--ink);margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .pscore{font-weight:700;font-size:15px}
+
+  /* practice: all questions on one page */
+  .qcard{margin-bottom:16px}
+  .qcard .qtext{font-size:17px}
+  .secTitle{font-size:20px;font-weight:700;margin:6px 0 12px}
+  .scoreCard{text-align:center;margin-top:8px}
+  .scoreCard .big{margin:2px 0 6px}
+  .pnav{display:flex;gap:10px;margin-top:14px}
+  .pnav button{flex:1}
+
+  /* review */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+  .chip{padding:8px 12px;border-radius:999px;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:14px}
+  .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .rev{margin-bottom:14px;border-left-width:6px}
+  .rev.ok{border-left-color:var(--good)}
+  .rev.bad{border-left-color:var(--bad)}
+  .rev.skip{border-left-color:var(--warn)}
+  .rev .tag{font-weight:700;font-size:14px;margin-bottom:6px}
+  .rev .opt{cursor:default}
+  .rev .opt small{display:block;font-weight:600;margin-top:2px}
+  .rev .opt.right small{color:var(--good)}
+  .rev .opt.wrong small{color:var(--bad)}
+  .empty{color:var(--muted);text-align:center;padding:24px 0}
+
+  .seg{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 4px}
+  .weeks{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+  .weeks .chip{min-width:0}
+  .linkbtn{background:transparent;color:var(--accent);padding:6px 4px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HOME -->
+  <section id="home" class="card">
+    <h1>MCQ Practice</h1>
+    <p class="sub">Choose how you want to study.</p>
+    <button class="mode" id="modePractice"><b>Practice</b><span>All questions on one page. Scroll down and tap an option to see instantly if it is right or wrong.</span></button>
+    <button class="mode" id="modeTest"><b>Test</b><span>Timed exam. Answer freely and see your score at the end.</span></button>
+  </section>
+
+  <!-- SETUP -->
+  <section id="setup" class="card hidden">
+    <h1 id="setupTitle">Test</h1>
+    <p class="sub" id="setupSub"></p>
+
+    <div id="scopeWrap" class="hidden">
+      <label>Practice from</label>
+      <div class="seg" id="scopeSeg">
+        <button class="chip on" id="scopeRandom">Random (all weeks)</button>
+        <button class="chip" id="scopeWeek">Week-wise</button>
+      </div>
+      <div id="weekWrap" class="hidden">
+        <div class="weeks" id="weekChips"></div>
+        <button class="linkbtn" id="weekAll">Select all</button>
+        <button class="linkbtn" id="weekNone">Clear</button>
+        <div class="hint">Each selected week opens as its own page with all of its questions.</div>
+      </div>
+    </div>
+
+    <div id="numWrap">
+      <label for="numQ">Number of questions</label>
+      <input type="number" id="numQ" min="1" inputmode="numeric">
+      <div class="hint" id="numHint"></div>
+    </div>
+
+    <div id="timeWrap">
+      <label for="mins">Time (minutes)</label>
+      <input type="number" id="mins" min="1" inputmode="numeric">
+      <div class="hint">Set at 1.5 minutes per question. You can change it.</div>
+    </div>
+    <p class="hint">Questions and options are shown exactly as written. Only their order is shuffled.</p>
+
+    <button class="full" id="startBtn">Start test</button>
+    <button class="full ghost" id="backBtn" style="margin-top:10px">Back</button>
+  </section>
+
+  <!-- PRACTICE (all questions of a week / the random set on one scrolling page) -->
+  <section id="practice" class="hidden">
+    <div class="bar">
+      <div class="count" id="pCount"></div>
+      <div class="pscore"><span class="good" id="pC">0</span> correct · <span class="bad" id="pW">0</span> wrong</div>
+      <button class="ghost" id="pEnd" style="padding:8px 12px">End</button>
+    </div>
+    <div class="progress"><i id="pProg"></i></div>
+    <div class="chips hidden" id="secChips"></div>
+    <div class="secTitle" id="secTitle"></div>
+    <div id="pList"></div>
+    <div class="card scoreCard" id="scoreCard">
+      <div class="hint" id="scoreLabel"></div>
+      <div class="big" id="scoreBigP"></div>
+      <div id="scoreMsg" style="font-weight:600"></div>
+    </div>
+    <div class="pnav">
+      <button class="ghost hidden" id="prevSec">← Previous week</button>
+      <button class="hidden" id="nextSec">Next week →</button>
+    </div>
+    <button class="full ghost" id="pFinish">Finish &amp; see overall result</button>
+  </section>
+
+  <!-- EXAM -->
+  <section id="exam" class="hidden">
+    <div class="bar">
+      <div class="timer" id="timer">00:00:00</div>
+      <div class="count" id="count"></div>
+      <button class="ghost" id="palBtn" style="padding:8px 12px">Questions</button>
+    </div>
+    <div class="progress"><i id="prog"></i></div>
+
+    <div class="card">
+      <p class="qtext" id="qtext"></p>
+      <div id="opts"></div>
+      <div class="nav">
+        <button class="ghost" id="prevBtn">Previous</button>
+        <button class="ghost mid" id="clearBtn">Clear</button>
+        <button id="nextBtn">Next</button>
+      </div>
+    </div>
+    <button class="full danger" id="submitBtn">Submit test</button>
+  </section>
+
+  <!-- REVIEW -->
+  <section id="review" class="hidden">
+    <div class="bar">
+      <h2 style="margin:0">Review</h2>
+      <button class="ghost" id="revBack" style="padding:8px 12px">Back to result</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div id="revList"></div>
+  </section>
+
+  <!-- PALETTE -->
+  <div id="palModal" class="modal hidden">
+    <div class="card" style="max-height:85vh;overflow:auto">
+      <h2>Jump to question</h2>
+      <div class="palette" id="palette"></div>
+      <button class="full ghost" id="palClose" style="margin-top:6px">Close</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM SUBMIT -->
+  <div id="confirmModal" class="modal hidden">
+    <div class="card">
+      <h2>Submit test?</h2>
+      <p id="confirmMsg" style="margin:0"></p>
+      <div class="btns">
+        <button class="ghost" id="confirmNo">Go back</button>
+        <button class="danger" id="confirmYes">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <section id="result" class="card hidden">
+    <h1>Result</h1>
+    <div class="big" id="scoreBig"></div>
+    <div class="hint" id="timeUsed"></div>
+    <div class="stats">
+      <div class="stat"><b class="good" id="rCorrect">0</b><span>Correct</span></div>
+      <div class="stat"><b class="bad" id="rWrong">0</b><span>Incorrect</span></div>
+      <div class="stat"><b class="warn" id="rSkip">0</b><span>Not attempted</span></div>
+    </div>
+    <button class="full" id="reviewBtn">Review answers</button>
+    <button class="full ghost" id="againBtn" style="margin-top:10px">Back to home</button>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   QUESTIONS
+   Format: { q: "question text", o: ["option 1","option 2",...], a: index_of_correct_option (0 = first), w: week_number }
+   Add more questions to this list (keep the same format).
+   ============================================================ */
+const QUESTIONS = [
+  /* Week 0 */
+  { q: "What is Psychology?", o: ["Just a social media trend", "An art of living", "A subject about human body", "A study of cognitive processes & behavior"], a: 3, w: 0 },
+  { q: "A broad field of study that explores a variety of questions about thoughts, feelings and actions is -------?", o: ["Society", "Globalization", "Psychology", "Social Science"], a: 2, w: 0 },
+  { q: "Learning has been a central topic of research in ___.", o: ["Chemistry", "Physics", "Mathematics", "Psychology"], a: 3, w: 0 },
+  { q: "The word Psyche means -------------?", o: ["Body or physique", "Mind or soul", "Spirituality", "Hormones"], a: 1, w: 0 },
+  { q: "The ___ of learning focuses on how people learn.", o: ["psychology", "english", "chemistry", "none of the given"], a: 0, w: 0 },
+  { q: "To help people to function effectively and fulfill their own unique potential” is the aim of------------?", o: ["Humanistic psychology", "Evolutionary biology", "Computer science", "Microbiology"], a: 0, w: 0 },
+  { q: "Psychology is not an independent science, but dependent on other fields.", o: ["True", "False"], a: 1, w: 0 },
+  { q: "The study of changes in an individual’s behavior during his/her lifetime is called ----------.", o: ["Hormonal psychology", "Gender psychology", "Developmental Psychology", "Genetics or Heredity"], a: 2, w: 0 },
+  { q: "The study of differences and similarities in the behavior of animals of different species is called ------------------------.", o: ["Developmental psychology", "Cultural psychology", "Personality psychology", "Comparative Psychology"], a: 3, w: 0 },
+  { q: "Humans are incapable of learning.", o: ["True", "False"], a: 1, w: 0 },
+
+  /* Week 1 */
+  { q: "Learning is often seen as the contiguous causal effect of ____ on behavior.", o: ["blood", "bone density", "trauma", "experience"], a: 3, w: 1 },
+  { q: "In order to say that learning has occurred, a hidden change in behavior must occur.", o: ["True", "False"], a: 1, w: 1 },
+  { q: "Which of the following is not a mental construct?", o: ["skeleton", "knowledge", "representations", "associations"], a: 0, w: 1 },
+  { q: "Learning changes the ___ structure of the brain through the process of continuous interactions between the learner and the external environment.", o: ["physical", "social", "biological", "none of the given"], a: 0, w: 1 },
+  { q: "___ shapes the learning process.", o: ["Only thoughts", "Only emotions", "Both thoughts and emotions", "Neither thoughts nor emotions"], a: 2, w: 1 },
+  { q: "Watson's work included the famous Little Albert experiment in which he conditioned a small child to ___ a white rat.", o: ["fear", "love", "hate", "play with"], a: 0, w: 1 },
+  { q: "Behaviorism dominated psychology for much of the early ___ century.", o: ["20th", "19th", "18th", "17th"], a: 0, w: 1 },
+  { q: "The state of “conscious incompetence” may be valuable ____ of a learning experience.", o: ["at the end", "in the middle", "2 years after the end", "at the start"], a: 3, w: 1 },
+  { q: "Which of the following is not an outcome of effective e-learning?", o: ["wider range of strategies", "more reflective approach", "more positive emotions towards learning", "more disconnected knowledge"], a: 3, w: 1 },
+  { q: "Instrumental conditioning is an example of ___ learning.", o: ["sensitization", "habituation", "associative", "meaningful"], a: 2, w: 1 },
+
+  /* Week 2 */
+  { q: "The three major types of learning described by ___ psychology are classical conditioning, operant conditioning and observational learning.", o: ["cognitive", "behavioral", "emotional", "evolutionary"], a: 1, w: 2 },
+  { q: "According to the view of Watson, psychology is ___.", o: ["subjective", "only descriptive", "experimental", "about internal mental processes that cannot be measured and observed"], a: 2, w: 2 },
+  { q: "___ is given by Ivan Pavlov.", o: ["Operant conditioning", "Functional conditioning", "Classical conditioning", "Modern conditioning"], a: 2, w: 2 },
+  { q: "The process by which organisms learn to respond to certain stimuli but not to others is known as ___.", o: ["stimulus generalization", "stimulus appreciation", "stimulus discrimination", "stimulus differentiation"], a: 2, w: 2 },
+  { q: "Higher-order conditioning is intrinsically weaker than its first-order counterpart.", o: ["True", "False"], a: 0, w: 2 },
+  { q: "____ is the process of gradually changing the quality of a response.", o: ["Shaping", "Modeling", "Cueing", "Shifting"], a: 0, w: 2 },
+  { q: "The works of ___ were instrumental in engendering the dramatic shift from behaviorism to cognitive theories.", o: ["Edward C. Tolman", "Jean Piaget", "German Gestalt", "All of the given"], a: 3, w: 2 },
+  { q: "___ intelligence is the ability to perceive the visual–spatial world accurately and involves sensitivity to color, line, shape, form, space, and the potential for recognizing and manipulating the patterns of spaces.", o: ["Interpersonal", "Spatial", "Bodily-kinesthetic", "Linguistic"], a: 1, w: 2 },
+  { q: "Sternberg proposed his theory in 1985 as an alternative to the idea of the ___.", o: ["general intelligence factor", "multiple intelligences", "specific intelligence factor", "unconscious intelligence"], a: 0, w: 2 },
+  { q: "Which of the following is not a kind of product in the structure of intellect model?", o: ["symbolic", "classes", "systems", "implications"], a: 0, w: 2 },
+
+  /* Week 3 */
+  { q: "The connections between nerves cells are called ___.", o: ["systems", "syntaxes", "neurons", "synapses"], a: 3, w: 3 },
+  { q: "In order to create a ___, information must be changed into a usable form, which occurs through a process known as encoding.", o: ["past memory", "new imagination", "new memory", "past imagination"], a: 2, w: 3 },
+  { q: "Calling back the stored information in response to some cue for use in a process or activity is called ___.", o: ["Retrieval", "Recall", "Recollection", "All of the given"], a: 3, w: 3 },
+  { q: "For many with ___ deficits, reading facial expressions and knowing how to respond are confusing daily challenges.", o: ["memory", "intelligence", "social cognition", "biological cognition"], a: 2, w: 3 },
+  { q: "The Information Processing View of Learning assumes that there are limits to how much information can be processed at each stage.", o: ["True", "False"], a: 0, w: 3 },
+  { q: "The Information Processing View of Learning assumes that information process is involved in ___", o: ["forgetting", "remembering", "perceiving", "All of the given"], a: 3, w: 3 },
+  { q: "The capacity of the sensory register is ___.", o: ["very small", "very large", "7+/-2 chunks", "unlimited"], a: 1, w: 3 },
+  { q: "Most children do not begin to engage in the process of rehearsal on their own until about age ___.", o: ["seven", "two", "thirteen", "one"], a: 0, w: 3 },
+  { q: "___ provides an interface between the sub-systems of working memory and the part of long term memory specialized for episodic memory.", o: ["Phonological loop", "Visuo-spatial sketchpad", "Retrieval buffer", "Episodic buffer"], a: 3, w: 3 },
+  { q: "Memories of specific episodes of one’s life refers to ___.", o: ["declarative memory", "experimental episodic memory", "autobiographical episodic memory", "procedural memory"], a: 2, w: 3 },
+
+  /* Week 4 */
+  { q: "___ thinking is the ability to create mental representations of objects, places, events, or people in your mind.", o: ["General", "Creative", "Divergent", "Symbolic"], a: 3, w: 4 },
+  { q: "We compare new information to our ___ of the person, place, or thing, so we know how to categorize the new information mentally.", o: ["protofit", "protobite", "prototype", "none of the given"], a: 2, w: 4 },
+  { q: "Which of the following is not true?", o: ["Thinking is a higher mental process", "Thinking is a sub-vocal talking", "Thinking is fulfilling a need or problem solving", "Thinking is only done in verbal symbols"], a: 3, w: 4 },
+  { q: "Mental images are ___.", o: ["Auditory", "Visual", "Gustatory", "All of the given"], a: 3, w: 4 },
+  { q: "___ organize complex phenomena into simpler, easily understandable, and usable categories and help to solve our problems.", o: ["Concepts", "Propositions", "Constructs", "Components"], a: 0, w: 4 },
+  { q: "The lowermost level of Bloom’s taxonomy is ___.", o: ["remember", "apply", "understand", "analyze"], a: 0, w: 4 },
+  { q: "The psychomotor domain of the Bloom’s taxonomy is concerned with ___.", o: ["Biological makeup", "Thoughts and beliefs", "Feelings and emotions", "Skilled behavior"], a: 3, w: 4 },
+  { q: "Which of the following is an example of meta-cognition skills?", o: ["Ignoring your limits", "Self-monitoring", "Skimming all important information", "All of the given"], a: 1, w: 4 },
+  { q: "___ critical thinking skill helps you analyze and process information to come to an unbiased conclusion.", o: ["Open-mindedness", "Self-regulation", "Self-control", "Observation"], a: 0, w: 4 },
+  { q: "The inspiration phase of the creative thinking process refers to the ___ stage.", o: ["Incubation", "Insight", "Evaluation", "Preparation"], a: 3, w: 4 },
+
+  /* Week 5 */
+  { q: "Which of the following is true about motivation?", o: ["It is a physical impulse", "It is an external process", "It has a willingness to activate but not channel the attitudes of learners", "None of the given"], a: 3, w: 5 },
+  { q: "The term “motivation” comes from a ___ word.", o: ["Greek", "Latin", "Hindi", "Bengali"], a: 1, w: 5 },
+  { q: "It is called extrinsic motivation if causal factor is ___.", o: ["curiosity", "social pressure", "self-satisfaction", "needs"], a: 1, w: 5 },
+  { q: "___ motivation is considered to be more crucial for students as it is associated with deep learning, better performance and self-efficacy.", o: ["Intrinsic", "Extrinsic", "Introjected regulation", "None of the given"], a: 0, w: 5 },
+  { q: "___ proposed that there are three primary drives that drive human behavior.", o: ["Hull", "Watson", "Piaget", "Gestalt"], a: 0, w: 5 },
+  { q: "Expectancy Theory of Motivation was developed by ___.", o: ["Vroom", "Hull", "Murray", "None of the given"], a: 0, w: 5 },
+  { q: "An example of ___ is thinking, “If I work hard I can achieve the targets my boss has set for me”.", o: ["purposeful", "valence", "instrumentality", "expectancy"], a: 3, w: 5 },
+  { q: "In SMART goals, T stands for ___.", o: ["Temporary", "Time-based", "Tough", "Testing"], a: 1, w: 5 },
+  { q: "Friendship is a ___ need in Maslow’s hierarchy.", o: ["Love and belonging", "Esteem", "Physiological", "Safety"], a: 0, w: 5 },
+  { q: "___ theory differentiates between autonomous motivation and controlled motivation.", o: ["Arousal", "Goal-setting", "Need hierarchy", "Self-determination"], a: 3, w: 5 },
+
+  /* Week 6 */
+  { q: "According to Daniel Goleman, ___ component of emotional intelligence focuses on how we handle relationships with others.", o: ["self-awareness", "motivation", "empathy", "emotional regulation"], a: 2, w: 6 },
+  { q: "Emotional intelligence can be considered a type of ___ intelligence.", o: ["academic", "genetic", "social", "external"], a: 2, w: 6 },
+  { q: "Noticing a difficult emotion and slowing down or resisting any impulsive action that may follow highlights ___ component of emotional intelligence.", o: ["Self-regulation", "Motivation", "Emotional literacy", "Empathy"], a: 0, w: 6 },
+  { q: "The following are signs of emotional intelligence, except ___.", o: ["strong sense of curiosity", "holding onto mistakes", "ability to manage emotions in difficult situations", "self-confidence"], a: 1, w: 6 },
+  { q: "Perceiving emotions means ___.", o: ["Ignoring signals", "Understanding only what somebody is saying to you", "Understanding only somebody’s facial expression", "Understanding both verbal and nonverbal signals"], a: 3, w: 6 },
+  { q: "___ suggests that 10 distinct components provide the scaffolding of emotionally and socially intelligent behaviors:", o: ["Bar-On", "Goleman", "Salovey", "Mayer"], a: 0, w: 6 },
+  { q: "Which of the following is a facilitator of EQ?", o: ["optimism", "happiness", "independence", "all of the given"], a: 3, w: 6 },
+  { q: "___ is a strategy for improving one’s self-awareness.", o: ["rejecting feedback", "using critical self-talk daily", "developing a fixed mindset", "pursuing one’s passion"], a: 3, w: 6 },
+  { q: "Having students create autobiographies is an example of creating opportunities for ___.", o: ["emotional labor", "emotional contagion", "metacognition", "none of the given"], a: 2, w: 6 },
+  { q: "Which of the following is not true about management of emotions?", o: ["It is essentially a private act", "It is directly regulated by others", "It is influenced by cultural norms", "It is influenced by what society defines as appropriate to feel and express"], a: 1, w: 6 },
+
+  /* Week 7 */
+  { q: "Which of the following is false about learning according to Gagne’s definition?", o: ["It is a change in human disposition", "It persists over a period of time", "It is simply ascribable to processes of growth", "None of the above"], a: 2, w: 7 },
+  { q: "Manual or physical skills come under ___ component of Bloom’s taxonomy.", o: ["Cognitive", "Affective", "Psychomotor", "Physical"], a: 2, w: 7 },
+  { q: "Reflection, learning and education was explored by ___.", o: ["Carl Rogers", "John Watson", "Benjamin Bloom", "John Dewey"], a: 3, w: 7 },
+  { q: "The principles of ___ refer to how close in time two events must be for a bond to be formed.", o: ["behavior", "reinforcement", "repetition", "contiguity"], a: 3, w: 7 },
+  { q: "___ gives information to learners about their success or failure concerning the task at hand.", o: ["Cognitive feedback", "Emotional feedback", "Reinforcement", "Physical feedback"], a: 0, w: 7 },
+  { q: "The ___ orientation to learning has a quality of personal involvement—the whole person in both feeling and cognitive aspects being in the learning event.", o: ["behavioral", "cognitive", "humanistic", "social"], a: 2, w: 7 },
+  { q: "Learning through play is ___ learning.", o: ["primary", "secondary", "passive", "active"], a: 3, w: 7 },
+  { q: "People with ___ learning style are prone to sorting their ideas after speaking, rather than thinking ideas through before.", o: ["logical", "solitary", "visual", "auditory"], a: 3, w: 7 },
+  { q: "Which of the following statements is false?", o: ["Effective instruction is static", "Effective instruction is eclectic", "Effective instruction is generative", "Effective instruction is interactive"], a: 0, w: 7 },
+  { q: "In ADDIE model, I stand for ___.", o: ["instruction", "implementation", "integration", "induction"], a: 1, w: 7 },
+
+  /* Week 8 */
+  { q: "The word ‘pedagogy’ has been derived from the ___ word “pedagogue”.", o: ["Latin", "Sanskrit", "Greek", "English"], a: 2, w: 8 },
+  { q: "Which of the following statements is not true about pedagogy?", o: ["It is a method or way of teaching", "It is derived from the Greek word “pedagogue”", "It helps a teacher understand how learning should be facilitated.", "It harms the quality of teaching and learning."], a: 3, w: 8 },
+  { q: "Pedagogy can enhance the student-teacher relationship.", o: ["True", "False"], a: 0, w: 8 },
+  { q: "___ learning is based on the model that knowledge can be created within a population where members actively interact by sharing experiences and take on asymmetry roles.", o: ["integrative", "inquiry-based", "collaborative", "constructivist"], a: 2, w: 8 },
+  { q: "The Pedagogical Model provides an overview of the learning cycle and breaks it down into ___ domains or phases of instruction.", o: ["five", "three", "two", "seven"], a: 0, w: 8 },
+  { q: "Which of the following is not a type of inquiry-based approach?", o: ["confrontation", "structure", "guided", "open"], a: 0, w: 8 },
+  { q: "In experiential learning, students are engaged ___.", o: ["intellectually", "soulfully", "socially", "all of the given"], a: 3, w: 8 },
+  { q: "___ stage of experiential theory by Kolb focuses on planning.", o: ["concrete experience", "abstract conceptualization", "reflective observation", "active experimentation"], a: 3, w: 8 },
+  { q: "People with a ___ learning style can often act on “gut feeling” and will rely on others' analysis rather than their own.", o: ["accommodating", "converging", "diverging", "assimilating"], a: 0, w: 8 },
+  { q: "According to the ___ principle, students learn better from animation and narration than from animation and on-screen text.", o: ["multimedia", "modality", "coherence", "temporal contiguity"], a: 1, w: 8 },
+
+  /* Week 9 */
+  { q: "E-learning is any form of ___.", o: ["teaching", "training", "tutoring", "all of the given"], a: 3, w: 9 },
+  { q: "___ is a feature of e-learning.", o: ["difficulty in access", "user friendliness", "social injustice", "closed learning"], a: 1, w: 9 },
+  { q: "E-learning is a synonym of audio-visual learning, multimedia learning, and distance learning.", o: ["True", "False"], a: 1, w: 9 },
+  { q: "Which of the following is not a type of e-learning?", o: ["text-driven", "interactive", "simulation", "physical"], a: 3, w: 9 },
+  { q: "Which of the following is not a benefit of e-learning?", o: ["It can accommodate the need of a housewife", "People can revise the learning content as many times as they want", "It facilitates in developing and communicating new training policies", "None of the given"], a: 3, w: 9 },
+  { q: "Good learners know ___.", o: ["What they are learning", "Why they are learning", "How they are learning", "All of the given"], a: 3, w: 9 },
+  { q: "Learners may multitask when engaging in an online course, which could be resulting in ___.", o: ["hyperfocus", "better retrieval", "shorter attention spans", "None of the given"], a: 2, w: 9 },
+  { q: "___ learning is the crucial determinant of successful e-learning.", o: ["passive", "retrospective", "social", "active"], a: 3, w: 9 },
+  { q: "The brain can process 36,000 visual cues per___.", o: ["hour", "second", "day", "year"], a: 0, w: 9 },
+  { q: "For effective learning, online courses should ___.", o: ["use headings", "use complex language", "present long pieces of text", "use random images"], a: 0, w: 9 },
+
+  /* Week 10 */
+  { q: "During Covid-19 the world was busy in preparing 1.5 billion learners for the new normal, i.e., ___ learning.", o: ["ineffective", "physical", "remote", "experiential"], a: 2, w: 10 },
+  { q: "To develop learner readiness for online learning, training sessions on ___ are helpful.", o: ["netiquettes", "time management", "developing study skills", "all of the given"], a: 3, w: 10 },
+  { q: "The typical picture of a teacher being a dispenser of knowledge to the students has been replaced by that of a ___.", o: ["obstructor", "parent", "friend", "facilitator"], a: 3, w: 10 },
+  { q: "In 2018, Global Education and Skills Forum noted that the ‘future’ teacher would need the 5 skills to thrive in the 21st century. Which of the following is not one of them?", o: ["Strong social skills", "Data analysis", "External focus", "Strictness"], a: 3, w: 10 },
+  { q: "Participatory education demands ___ so as to build a needs-based approach to teaching.", o: ["creativity", "stubbornness", "reward", "none of the given"], a: 0, w: 10 },
+  { q: "Students who consider intelligence as a malleable entity tend to focus on their obstacles instead of goals.", o: ["True", "False"], a: 1, w: 10 },
+  { q: "Which of the following is not a principle to enhance student learning.", o: ["What students already know affects their learning", "Learning is context-based", "Students’ cognitive development and learning is limited by the general stages of development.", "The acquisition of knowledge and skills in the long term depends largely on practice."], a: 2, w: 10 },
+  { q: "___ feedback to students is important for learning.", o: ["Unclear", "Late", "Harsh", "Explanatory"], a: 3, w: 10 },
+  { q: "Mastery goals are those that are geared towards the acquisition or improvement of___.", o: ["Skills", "Number of students in a classroom", "Teacher feedback", "None of the given"], a: 0, w: 10 },
+  { q: "The vast majority of formative assessment is___.", o: ["Formal", "Incorrect", "Written", "informal"], a: 3, w: 10 },
+
+  /* Week 11 */
+  { q: "Social cognition has a protracted development through infancy to ___.", o: ["teenage", "old-age", "adulthood", "death"], a: 2, w: 11 },
+  { q: "Which of the following abilities comes under social cognition?", o: ["Face processing", "Joint attention", "Theory of mind", "All of the given"], a: 3, w: 11 },
+  { q: "Under social cognition, abilities involved in affective processing are often called ___.", o: ["hot", "cold", "white", "black"], a: 0, w: 11 },
+  { q: "Social schemas refer to people's mental representations of social ___.", o: ["values", "memories", "skills", "patterns"], a: 3, w: 11 },
+  { q: "During the earliest stages of development, children are very ___-centric. They see the world from their own perspective and struggle to think about how other people may view the world.", o: ["selfish", "ego", "conscious", "emotional"], a: 1, w: 11 },
+  { q: "A theory of mind refers to a person's ability to understand and think about the ___ of other people.", o: ["behaviors", "family backgrounds", "mental states", "language"], a: 2, w: 11 },
+  { q: "The same social behavior in one cultural setting might have a very different meaning and interpretation if it were to occur or be observed in another culture.", o: ["True", "False"], a: 0, w: 11 },
+  { q: "Social cognitive theory by Bandura focuses on concepts of ___.", o: ["self-efficacy", "modeling", "observational learning", "all of the given"], a: 3, w: 11 },
+  { q: "The central tenet of Bandura’s social-cognitive theory is that people seek to develop a sense of ___ over the important events in their lives.", o: ["agency", "dependency", "attachment", "emotion"], a: 0, w: 11 },
+  { q: "___ hypothesis suggests that social processes influence how information is selected, organized, integrated, and retrieved.", o: ["activation", "cognitive influence", "interaction", "social cue strength"], a: 1, w: 11 },
+
+  /* Week 12 */
+  { q: "Sustainability in economic sustainability is ___.", o: ["multidimensional", "bidimensional", "unidimensional", "none of the given"], a: 2, w: 12 },
+  { q: "The term \"sustainable development\" was first mentioned in a book related to the 1972 UN Stockholm conference on ___.", o: ["water", "poverty", "economic crisis", "human environment"], a: 3, w: 12 },
+  { q: "Environmental sustainability focuses on impacts of processes, products and services on ___.", o: ["water", "biodiversity", "human health", "all of the given"], a: 3, w: 12 },
+  { q: "Which of the following does not come under social sustainability?", o: ["Labour practices", "Revenue generation", "Human rights", "Business ethics"], a: 1, w: 12 },
+  { q: "SDG ___ focuses on clean water and sanitation.", o: ["1", "17", "6", "3"], a: 2, w: 12 },
+  { q: "SDG 16 focuses on ___.", o: ["No poverty", "No hunger", "Good health", "Peace and justice"], a: 3, w: 12 },
+  { q: "On 20 October 2020, the Higher Education Sustainability Initiative (HESI) raised the flag of higher education as a driver for sustainable development and inclusive societies on the first day of the ___ 2020.", o: ["National Sustainability Meeting", "National Teachers Meeting", "Global Childrens’ Meeting", "Global Education Meeting"], a: 3, w: 12 },
+  { q: "Education is related to all SDGs.", o: ["True", "False"], a: 0, w: 12 },
+  { q: "Successful implementation of ESD requires a shift in focus from ___.", o: ["teaching to learning", "learning to teaching", "reading to speaking", "knowing to ignoring"], a: 0, w: 12 },
+  { q: "___ competency is the ability to reflect on one’s own role in the local community and (global) society.", o: ["collaboration", "self-awareness", "strategic", "normative"], a: 1, w: 12 }
+];
+/* ============================================================ */
+
+const FULL_EXAM_MINUTES = 180;
+const FULL_EXAM_QUESTIONS = 120;
+const RANDOM_PRACTICE_DEFAULT = 20;   // default question count for Random practice (you can change it on the setup screen)
+
+const $ = id => document.getElementById(id);
+let mode = 'test';
+let paper = [];      // [{q, opts:[{text, correct}], chosen:null|number}]
+let cur = 0;
+let endAt = 0;
+let startedAt = 0;
+let tick = null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function shuffleOpts(opts){
+  // "All of the given" / "None of the given" style options stay last so they still make sense
+  const isPinned = o => /^(all|none) of the (given|above)/i.test(o.text.trim());
+  return shuffle(opts.filter(o => !isPinned(o))).concat(opts.filter(isPinned));
+}
+function defaultMinutes(n){
+  return Math.max(1, Math.round(n * FULL_EXAM_MINUTES / FULL_EXAM_QUESTIONS));
+}
+function show(id){
+  ["home","setup","practice","exam","result","review"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+  window.scrollTo(0, 0);
+}
+function pad(n){ return String(n).padStart(2, "0"); }
+function fmt(sec){
+  sec = Math.max(0, sec);
+  return pad(Math.floor(sec/3600)) + ":" + pad(Math.floor(sec%3600/60)) + ":" + pad(sec%60);
+}
+function makeItem(item){
+  return {
+    q: item.q,
+    opts: shuffleOpts(item.o.map((t, i) => ({ text: t, correct: i === item.a }))),
+    chosen: null
+  };
+}
+
+/* ---------- setup ---------- */
+let scope = 'random';            // 'random' or 'week' (practice mode only)
+let selectedWeeks = new Set();
+const WEEKS = [...new Set(QUESTIONS.map(q => q.w))].sort((a, b) => a - b);
+
+function weekWise(){ return mode === 'practice' && scope === 'week'; }
+
+function currentPool(){
+  if(weekWise()) return QUESTIONS.filter(q => selectedWeeks.has(q.w));
+  return QUESTIONS;
+}
+function refreshPool(){
+  const total = currentPool().length;
+  $("numWrap").classList.toggle("hidden", weekWise());   // week-wise always uses every question of the week
+  $("numQ").max = total;
+  $("numQ").value = (mode === 'practice' && !weekWise()) ? Math.min(RANDOM_PRACTICE_DEFAULT, total) : total;
+  $("mins").value = defaultMinutes(total || 1);
+  $("numHint").textContent = total
+    ? "Available: " + total + " questions."
+    : "Select at least one week.";
+  $("startBtn").disabled = total === 0;
+}
+function renderWeekChips(){
+  const box = $("weekChips");
+  box.innerHTML = "";
+  WEEKS.forEach(w => {
+    const n = QUESTIONS.filter(q => q.w === w).length;
+    const b = document.createElement("button");
+    b.className = "chip" + (selectedWeeks.has(w) ? " on" : "");
+    b.textContent = "Week " + w + " (" + n + ")";
+    b.onclick = () => {
+      if(selectedWeeks.has(w)) selectedWeeks.delete(w); else selectedWeeks.add(w);
+      renderWeekChips();
+      refreshPool();
+    };
+    box.appendChild(b);
+  });
+}
+function setScope(sc){
+  scope = sc;
+  $("scopeRandom").classList.toggle("on", sc === 'random');
+  $("scopeWeek").classList.toggle("on", sc === 'week');
+  $("weekWrap").classList.toggle("hidden", sc !== 'week');
+  refreshPool();
+}
+$("scopeRandom").onclick = () => setScope('random');
+$("scopeWeek").onclick = () => setScope('week');
+$("weekAll").onclick = () => { WEEKS.forEach(w => selectedWeeks.add(w)); renderWeekChips(); refreshPool(); };
+$("weekNone").onclick = () => { selectedWeeks.clear(); renderWeekChips(); refreshPool(); };
+
+function initSetup(){
+  scope = 'random';
+  selectedWeeks = new Set();
+  renderWeekChips();
+  $("scopeRandom").classList.add("on");
+  $("scopeWeek").classList.remove("on");
+  $("weekWrap").classList.add("hidden");
+  refreshPool();
+}
+$("numQ").addEventListener("input", () => {
+  const n = parseInt($("numQ").value, 10);
+  if(n > 0) $("mins").value = defaultMinutes(Math.min(n, currentPool().length));
+});
+
+$("startBtn").onclick = () => {
+  const src = currentPool();
+  if(!src.length) return;
+  clearInterval(tick);
+
+  /* ----- Practice: build sections, everything shown on a scrolling page ----- */
+  if(mode === 'practice'){
+    if(weekWise()){
+      const weeks = [...selectedWeeks].sort((a, b) => a - b);
+      sections = weeks.map(w => ({
+        title: "Week " + w,
+        short: "Week " + w,
+        items: QUESTIONS.filter(q => q.w === w).map(makeItem)
+      }));
+    } else {
+      let n = parseInt($("numQ").value, 10);
+      if(!(n > 0)) n = Math.min(RANDOM_PRACTICE_DEFAULT, src.length);
+      n = Math.min(n, src.length);
+      sections = [{
+        title: "Random practice",
+        short: "Random",
+        items: shuffle(src).slice(0, n).map(makeItem)
+      }];
+    }
+    paper = sections.flatMap(s => s.items);
+    secIdx = 0;
+    startedAt = Date.now();
+    endAt = startedAt;
+    show("practice");
+    renderSection();
+    return;
+  }
+
+  /* ----- Test (unchanged) ----- */
+  let n = parseInt($("numQ").value, 10);
+  let m = parseInt($("mins").value, 10);
+  if(!(n > 0)) n = src.length;
+  n = Math.min(n, src.length);
+  if(!(m > 0)) m = defaultMinutes(n);
+
+  paper = shuffle(src).slice(0, n).map(makeItem);
+  cur = 0;
+  startedAt = Date.now();
+  endAt = startedAt + m * 60000;
+  show("exam");
+  buildPalette();
+  render();
+  tick = setInterval(updateTimer, 500);
+  updateTimer();
+};
+
+/* ---------- mode selection ---------- */
+function openSetup(m){
+  mode = m;
+  initSetup();
+  $("setupTitle").textContent = m === 'practice' ? "Practice" : "Test";
+  $("setupSub").textContent = m === 'practice'
+    ? "All questions appear on one page. Tap an option to see the answer instantly."
+    : "Timed exam. Your score is shown after you submit.";
+  $("timeWrap").classList.toggle("hidden", m === 'practice');
+  $("scopeWrap").classList.toggle("hidden", m !== 'practice');
+  $("startBtn").textContent = m === 'practice' ? "Start practice" : "Start test";
+  refreshPool();
+  show("setup");
+}
+$("modePractice").onclick = () => openSetup('practice');
+$("modeTest").onclick = () => openSetup('test');
+$("backBtn").onclick = () => show("home");
+
+/* ---------- practice mode (one scrolling page per week / random set) ---------- */
+let sections = [];
+let secIdx = 0;
+let cardRefs = [];   // per question in current section: { item, card, optBtns, verdict }
+
+function paintCard(ref){
+  const { item, optBtns, verdict } = ref;
+  const answered = item.chosen !== null;
+  item.opts.forEach((opt, i) => {
+    const b = optBtns[i];
+    let cls = "opt";
+    if(answered){
+      if(opt.correct) cls += " right";                       // correct option → green
+      else if(item.chosen === i) cls += " wrong";            // my wrong pick → red
+    }
+    b.className = cls;
+    b.disabled = answered;
+  });
+  if(answered){
+    const ok = item.opts[item.chosen].correct;
+    verdict.className = "verdict " + (ok ? "good" : "bad");
+    verdict.textContent = ok ? "Correct" : "Wrong";
+    if(!ok){
+      const right = item.opts.find(o => o.correct);
+      const small = document.createElement("small");
+      small.textContent = "Correct answer: " + right.text;
+      verdict.appendChild(small);
+    }
+  } else {
+    verdict.className = "verdict hidden";
+    verdict.textContent = "";
+  }
+}
+
+function buildCard(item, num){
+  const card = document.createElement("div");
+  card.className = "card qcard";
+  const q = document.createElement("p");
+  q.className = "qtext";
+  q.textContent = num + ". " + item.q;
+  card.appendChild(q);
+
+  const optBtns = [];
+  item.opts.forEach((opt, i) => {
+    const b = document.createElement("button");
+    const k = document.createElement("span");
+    k.className = "k";
+    k.textContent = String.fromCharCode(65 + i);
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = opt.text;
+    b.append(k, t);
+    b.onclick = () => {
+      if(item.chosen !== null) return;   // first answer is final
+      item.chosen = i;
+      paintCard(ref);
+      updatePracticeStats();
+    };
+    optBtns.push(b);
+    card.appendChild(b);
+  });
+  const verdict = document.createElement("div");
+  card.appendChild(verdict);
+  const ref = { item, card, optBtns, verdict };
+  paintCard(ref);
+  return ref;
+}
+
+function renderSection(){
+  const sec = sections[secIdx];
+  $("secTitle").textContent = sec.title + " · " + sec.items.length + " questions";
+
+  // section switcher (only when more than one week was picked)
+  const chips = $("secChips");
+  chips.innerHTML = "";
+  chips.classList.toggle("hidden", sections.length < 2);
+  sections.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (i === secIdx ? " on" : "");
+    b.textContent = s.short;
+    b.onclick = () => { secIdx = i; renderSection(); window.scrollTo(0, 0); };
+    chips.appendChild(b);
+  });
+
+  const list = $("pList");
+  list.innerHTML = "";
+  cardRefs = sec.items.map((item, i) => buildCard(item, i + 1));
+  cardRefs.forEach(r => list.appendChild(r.card));
+
+  $("prevSec").classList.toggle("hidden", sections.length < 2);
+  $("nextSec").classList.toggle("hidden", sections.length < 2);
+  $("prevSec").disabled = secIdx === 0;
+  $("nextSec").disabled = secIdx === sections.length - 1;
+
+  updatePracticeStats();
+}
+
+function updatePracticeStats(){
+  const sec = sections[secIdx];
+  const total = sec.items.length;
+  let sAns = 0, sRight = 0;
+  sec.items.forEach(it => {
+    if(it.chosen !== null){ sAns++; if(it.opts[it.chosen].correct) sRight++; }
+  });
+  let aRight = 0, aWrong = 0;
+  paper.forEach(it => {
+    if(it.chosen === null) return;
+    if(it.opts[it.chosen].correct) aRight++; else aWrong++;
+  });
+
+  $("pCount").textContent = sec.short + " · " + sAns + "/" + total + " answered";
+  $("pC").textContent = aRight;
+  $("pW").textContent = aWrong;
+  $("pProg").style.width = (sAns / total * 100) + "%";
+
+  if(sAns < total){
+    $("scoreLabel").textContent = (total - sAns) + " question" + (total - sAns > 1 ? "s" : "") + " left in " + sec.title + " — keep scrolling";
+    $("scoreBigP").textContent = sRight + " / " + total;
+    $("scoreMsg").textContent = "Score so far";
+    $("scoreMsg").className = "";
+  } else {
+    $("scoreLabel").textContent = sec.title + " completed";
+    $("scoreBigP").textContent = sRight + " / " + total;
+    $("scoreMsg").textContent = "Final score for this page";
+    $("scoreMsg").className = sRight / total >= 0.5 ? "good" : "bad";
+  }
+}
+
+$("prevSec").onclick = () => { if(secIdx > 0){ secIdx--; renderSection(); window.scrollTo(0, 0); } };
+$("nextSec").onclick = () => { if(secIdx < sections.length - 1){ secIdx++; renderSection(); window.scrollTo(0, 0); } };
+$("pFinish").onclick = () => finish();
+$("pEnd").onclick = () => finish();
+
+/* ---------- exam ---------- */
+function render(){
+  const item = paper[cur];
+  $("qtext").textContent = (cur + 1) + ". " + item.q;
+  const box = $("opts");
+  box.innerHTML = "";
+  item.opts.forEach((opt, i) => {
+    const b = document.createElement("button");
+    b.className = "opt" + (item.chosen === i ? " sel" : "");
+    const k = document.createElement("span");
+    k.className = "k";
+    k.textContent = String.fromCharCode(65 + i);
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = opt.text;
+    b.append(k, t);
+    b.onclick = () => { item.chosen = i; render(); updatePalette(); };
+    box.appendChild(b);
+  });
+  $("prevBtn").disabled = cur === 0;
+  $("nextBtn").disabled = cur === paper.length - 1;
+  const done = paper.filter(p => p.chosen !== null).length;
+  $("count").textContent = (cur + 1) + " / " + paper.length + " · " + done + " answered";
+  $("prog").style.width = (done / paper.length * 100) + "%";
+  updatePalette();
+}
+$("prevBtn").onclick = () => { if(cur > 0){ cur--; render(); window.scrollTo(0,0); } };
+$("nextBtn").onclick = () => { if(cur < paper.length - 1){ cur++; render(); window.scrollTo(0,0); } };
+$("clearBtn").onclick = () => { paper[cur].chosen = null; render(); };
+
+function updateTimer(){
+  const left = Math.round((endAt - Date.now()) / 1000);
+  $("timer").textContent = fmt(left);
+  $("timer").classList.toggle("low", left <= 300);
+  if(left <= 0) finish();
+}
+
+/* ---------- palette ---------- */
+function buildPalette(){
+  const p = $("palette");
+  p.innerHTML = "";
+  paper.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.className = "pal";
+    b.textContent = i + 1;
+    b.onclick = () => { cur = i; $("palModal").classList.add("hidden"); render(); window.scrollTo(0,0); };
+    p.appendChild(b);
+  });
+}
+function updatePalette(){
+  [...$("palette").children].forEach((b, i) => {
+    b.classList.toggle("done", paper[i].chosen !== null);
+    b.classList.toggle("cur", i === cur);
+  });
+}
+$("palBtn").onclick = () => $("palModal").classList.remove("hidden");
+$("palClose").onclick = () => $("palModal").classList.add("hidden");
+
+/* ---------- submit ---------- */
+$("submitBtn").onclick = () => {
+  const left = paper.filter(p => p.chosen === null).length;
+  $("confirmMsg").textContent = left
+    ? left + " question" + (left > 1 ? "s are" : " is") + " not answered. Submit anyway?"
+    : "All questions answered. Submit now?";
+  $("confirmModal").classList.remove("hidden");
+};
+$("confirmNo").onclick = () => $("confirmModal").classList.add("hidden");
+$("confirmYes").onclick = () => { $("confirmModal").classList.add("hidden"); finish(); };
+
+function finish(){
+  clearInterval(tick);
+  $("palModal").classList.add("hidden");
+  $("confirmModal").classList.add("hidden");
+  let c = 0, w = 0, s = 0;
+  paper.forEach(p => {
+    if(p.chosen === null) s++;
+    else if(p.opts[p.chosen].correct) c++;
+    else w++;
+  });
+  $("rCorrect").textContent = c;
+  $("rWrong").textContent = w;
+  $("rSkip").textContent = s;
+  $("scoreBig").textContent = c + " / " + paper.length;
+  const used = Math.min(Math.round((Date.now() - startedAt) / 1000), Math.round((endAt - startedAt) / 1000));
+  $("timeUsed").textContent = mode === 'practice' ? "Practice mode" : "Time taken: " + fmt(used);
+  show("result");
+}
+$("againBtn").onclick = () => { show("home"); };
+
+/* ---------- review ---------- */
+let revFilter = "all";
+function statusOf(item){
+  if(item.chosen === null) return "skip";
+  return item.opts[item.chosen].correct ? "ok" : "bad";
+}
+function renderReview(){
+  const counts = { all: paper.length, bad: 0, ok: 0, skip: 0 };
+  paper.forEach(it => counts[statusOf(it)]++);
+
+  const chips = $("chips");
+  chips.innerHTML = "";
+  [["all","All"],["bad","Wrong"],["ok","Correct"],["skip","Not attempted"]].forEach(([key,label]) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (revFilter === key ? " on" : "");
+    b.textContent = label + " (" + counts[key] + ")";
+    b.onclick = () => { revFilter = key; renderReview(); };
+    chips.appendChild(b);
+  });
+
+  const list = $("revList");
+  list.innerHTML = "";
+  let shown = 0;
+  paper.forEach((item, idx) => {
+    const st = statusOf(item);
+    if(revFilter !== "all" && st !== revFilter) return;
+    shown++;
+    const card = document.createElement("div");
+    card.className = "card rev " + st;
+
+    const tag = document.createElement("div");
+    tag.className = "tag " + (st === "ok" ? "good" : st === "bad" ? "bad" : "warn");
+    tag.textContent = "Question " + (idx + 1) + " · " + (st === "ok" ? "Correct" : st === "bad" ? "Wrong" : "Not attempted");
+    const q = document.createElement("p");
+    q.className = "qtext";
+    q.style.fontSize = "17px";
+    q.textContent = item.q;
+    card.append(tag, q);
+
+    item.opts.forEach((opt, i) => {
+      const row = document.createElement("div");
+      let cls = "opt";
+      let note = "";
+      if(opt.correct){
+        cls += " right";
+        note = item.chosen === i ? "Your answer · Correct" : "Correct answer";
+      } else if(item.chosen === i){
+        cls += " wrong";
+        note = "Your answer";
+      }
+      row.className = cls;
+      const k = document.createElement("span");
+      k.className = "k";
+      k.textContent = String.fromCharCode(65 + i);
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = opt.text;
+      if(note){
+        const sm = document.createElement("small");
+        sm.textContent = note;
+        t.appendChild(sm);
+      }
+      row.append(k, t);
+      card.appendChild(row);
+    });
+    list.appendChild(card);
+  });
+  if(!shown){
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "No questions in this group.";
+    list.appendChild(e);
+  }
+}
+$("reviewBtn").onclick = () => {
+  const anyWrong = paper.some(it => statusOf(it) === "bad");
+  revFilter = anyWrong ? "bad" : "all";
+  renderReview();
+  show("review");
+};
+$("revBack").onclick = () => show("result");
+
+window.addEventListener("beforeunload", e => {
+  if(!$("exam").classList.contains("hidden") || !$("practice").classList.contains("hidden")){ e.preventDefault(); e.returnValue = ""; }
+});
+
+initSetup();
+</script>
+</body>
+</html>
