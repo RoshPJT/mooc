@@ -172,6 +172,7 @@
     <h1>MCQ Practice</h1>
     <p class="sub">Choose how you want to study.</p>
     <button class="mode" id="modePractice"><b>Practice</b><span>All questions on one page. Scroll down and tap an option to see instantly if it is right or wrong.</span></button>
+    <button class="mode" id="modeAnswers"><b>Answers</b><span>Browse every week's questions with the correct answers already shown in green.</span></button>
     <button class="mode" id="modeTest"><b>Test</b><span>Timed exam. Answer freely and see your score at the end.</span></button>
   </section>
 
@@ -234,6 +235,19 @@
       <button class="hidden" id="nextSec">Next week →</button>
     </div>
     <button class="full ghost" id="pFinish">Finish &amp; see overall result</button>
+    <button class="full ghost" data-home style="margin-top:10px">Back to home</button>
+  </section>
+
+  <!-- ANSWERS (week-wise answer key) -->
+  <section id="answers" class="hidden">
+    <div class="toprow"><button class="back" id="backAnswers">← Back</button><button class="back" data-home>Home</button></div>
+    <div class="chips" id="ansChips"></div>
+    <div class="secTitle" id="ansTitle"></div>
+    <div id="ansList"></div>
+    <div class="pnav">
+      <button class="ghost" id="ansPrev">← Previous week</button>
+      <button id="ansNext">Next week →</button>
+    </div>
     <button class="full ghost" data-home style="margin-top:10px">Back to home</button>
   </section>
 
@@ -413,6 +427,18 @@ const QUESTIONS = [
   { q: "Which of the following statements is false?", o: ["Effective instruction is static", "Effective instruction is eclectic", "Effective instruction is generative", "Effective instruction is interactive"], a: 0, w: 7 },
   { q: "In ADDIE model, I stand for ___.", o: ["instruction", "implementation", "integration", "induction"], a: 1, w: 7 },
 
+  /* Week 7 (Quiz) — stored as week 7.5 so it stays independent of Week 7 (PDF) */
+  { q: "Simon defined learning as changes in a system that result in ___ over time on tasks similar to those done previously.", o: ["boredom", "decreased anxiety", "improved performance", "reduced performance"], a: 2, w: 7.5 },
+  { q: "Robert Gagne defined learning as", o: ["a change in human disposition or capacity", "a change that persists over a period of time", "a change not simply ascribable to processes of growth", "all of the given"], a: 3, w: 7.5 },
+  { q: "Psychomotor skills are ___ skills.", o: ["cognitive", "spiritual", "mental", "physical"], a: 3, w: 7.5 },
+  { q: "Returning to experience refers to", o: ["attending to feelings", "re-examining experience in the light of one's intent and existing knowledge", "using helpful feelings and removing obstructive ones", "recalling or detailing salient events"], a: 3, w: 7.5 },
+  { q: "Which of the following assumptions does not come under the behaviorist orientation to learning?", o: ["Differences between individuals are important as they will affect learning", "Observable behavior rather than internal thought processes are the focus of study.", "Environment shapes one's behavior", "The principle of contiguity is central"], a: 0, w: 7.5 },
+  { q: "Reinforcement can come through sharing of results rather than a reward.", o: ["True", "False"], a: 0, w: 7.5 },
+  { q: "___ has contributed to the humanistic orientations to learning.", o: ["linguistic", "kinesthetic", "visual", "Carl Rogers"], a: 3, w: 7.5 },
+  { q: "In the process of learning, which of the following is not a component of output?", o: ["certification", "attitude change", "knowledge enhancement", "training plan"], a: 3, w: 7.5 },
+  { q: "Ambience, space and decorum do not affect learning.", o: ["True", "False"], a: 1, w: 7.5 },
+  { q: "Role-playing can motivate ___ type of learners effectively.", o: ["solitary", "social", "reading/writing", "logical/analytical"], a: 1, w: 7.5 },
+
   /* Week 8 */
   { q: "The word ‘pedagogy’ has been derived from the ___ word “pedagogue”.", o: ["Latin", "Sanskrit", "Greek", "English"], a: 2, w: 8 },
   { q: "Which of the following statements is not true about pedagogy?", o: ["It is a method or way of teaching", "It is derived from the Greek word “pedagogue”", "It helps a teacher understand how learning should be facilitated.", "It harms the quality of teaching and learning."], a: 3, w: 8 },
@@ -504,7 +530,7 @@ function defaultMinutes(n){
   return Math.max(1, Math.round(n * FULL_EXAM_MINUTES / FULL_EXAM_QUESTIONS));
 }
 function show(id){
-  ["home","setup","practice","exam","result","review"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+  ["home","setup","practice","answers","exam","result","review"].forEach(s => $(s).classList.toggle("hidden", s !== id));
   window.scrollTo(0, 0);
 }
 function pad(n){ return String(n).padStart(2, "0"); }
@@ -523,7 +549,12 @@ function makeItem(item){
 /* ---------- setup ---------- */
 let scope = 'random';            // 'random' or 'week' (practice mode only)
 let selectedWeeks = new Set();
-const WEEKS = [...new Set(QUESTIONS.map(q => q.w))].sort((a, b) => a - b);
+const WEEKS = [...new Set(QUESTIONS.map(q => q.w))].sort((a, b) => a - b);   // 14 sections
+function weekLabel(w){
+  if(w === 7) return "Week 7 (PDF)";
+  if(w === 7.5) return "Week 7 (Quiz)";
+  return "Week " + w;
+}
 
 function weekWise(){ return mode === 'practice' && scope === 'week'; }
 
@@ -549,7 +580,7 @@ function renderWeekChips(){
     const n = QUESTIONS.filter(q => q.w === w).length;
     const b = document.createElement("button");
     b.className = "chip" + (selectedWeeks.has(w) ? " on" : "");
-    b.textContent = "Week " + w + " (" + n + ")";
+    b.textContent = weekLabel(w) + " (" + n + ")";
     b.onclick = () => {
       if(selectedWeeks.has(w)) selectedWeeks.delete(w); else selectedWeeks.add(w);
       renderWeekChips();
@@ -658,8 +689,8 @@ let practiceWeekMode = false;
 function makeWeekSection(w){
   return {
     w: w,
-    title: "Week " + w,
-    short: "Week " + w,
+    title: weekLabel(w),
+    short: weekLabel(w),
     items: QUESTIONS.filter(q => q.w === w).map(makeItem)
   };
 }
@@ -752,7 +783,7 @@ function renderSection(){
     WEEKS.forEach(w => {
       const b = document.createElement("button");
       b.className = "chip" + (w === sec.w ? " on" : "");
-      b.textContent = "Week " + w;
+      b.textContent = weekLabel(w);
       b.onclick = () => gotoWeek(w);
       chips.appendChild(b);
     });
@@ -769,8 +800,8 @@ function renderSection(){
     const i = WEEKS.indexOf(sec.w);
     const pw = WEEKS[(i - 1 + WEEKS.length) % WEEKS.length];
     const nw = WEEKS[(i + 1) % WEEKS.length];
-    $("prevSec").textContent = "← Week " + pw;
-    $("nextSec").textContent = "Next: Week " + nw + " →";
+    $("prevSec").textContent = "← " + weekLabel(pw);
+    $("nextSec").textContent = "Next: " + weekLabel(nw) + " →";
     $("prevSec").disabled = false;
     $("nextSec").disabled = false;
   }
@@ -819,6 +850,69 @@ $("nextSec").onclick = () => {
 };
 $("pFinish").onclick = () => finish();
 $("pEnd").onclick = () => finish();
+
+/* ---------- answers viewer (week-wise answer key) ---------- */
+let ansWeek = 0;
+
+function renderAnswers(){
+  const items = QUESTIONS.filter(q => q.w === ansWeek);
+  $("ansTitle").textContent = weekLabel(ansWeek) + " · " + items.length + " questions";
+
+  const chips = $("ansChips");
+  chips.innerHTML = "";
+  WEEKS.forEach(w => {
+    const b = document.createElement("button");
+    b.className = "chip" + (w === ansWeek ? " on" : "");
+    b.textContent = weekLabel(w);
+    b.onclick = () => gotoAnswerWeek(w);
+    chips.appendChild(b);
+  });
+
+  const list = $("ansList");
+  list.innerHTML = "";
+  items.forEach((item, n) => {
+    const card = document.createElement("div");
+    card.className = "card qcard";
+    const q = document.createElement("p");
+    q.className = "qtext";
+    q.textContent = (n + 1) + ". " + item.q;
+    card.appendChild(q);
+
+    item.o.forEach((text, i) => {
+      const row = document.createElement("div");
+      row.className = "opt" + (i === item.a ? " right" : "");
+      const k = document.createElement("span");
+      k.className = "k";
+      k.textContent = String.fromCharCode(65 + i);
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = text;
+      row.append(k, t);
+      card.appendChild(row);
+    });
+
+    const v = document.createElement("div");
+    v.className = "verdict good";
+    v.textContent = "Correct answer: " + String.fromCharCode(65 + item.a) + ". " + item.o[item.a];
+    card.appendChild(v);
+    list.appendChild(card);
+  });
+
+  const i = WEEKS.indexOf(ansWeek);
+  const pw = WEEKS[(i - 1 + WEEKS.length) % WEEKS.length];
+  const nw = WEEKS[(i + 1) % WEEKS.length];
+  $("ansPrev").textContent = "← " + weekLabel(pw);
+  $("ansNext").textContent = "Next: " + weekLabel(nw) + " →";
+}
+function gotoAnswerWeek(w){
+  ansWeek = w;
+  renderAnswers();
+  window.scrollTo(0, 0);
+}
+$("modeAnswers").onclick = () => { ansWeek = WEEKS[0]; renderAnswers(); show("answers"); };
+$("backAnswers").onclick = () => show("home");
+$("ansPrev").onclick = () => { const i = WEEKS.indexOf(ansWeek); gotoAnswerWeek(WEEKS[(i - 1 + WEEKS.length) % WEEKS.length]); };
+$("ansNext").onclick = () => { const i = WEEKS.indexOf(ansWeek); gotoAnswerWeek(WEEKS[(i + 1) % WEEKS.length]); };
 
 /* ---------- exam ---------- */
 function render(){
