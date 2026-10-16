@@ -158,6 +158,11 @@
   .weeks .chip{min-width:0}
   .linkbtn{background:transparent;color:var(--accent);padding:6px 4px;font-size:14px}
   .toprow{display:flex;gap:8px;flex-wrap:wrap}
+  button.savebtn{
+    background:transparent;color:var(--ink);border:1px solid var(--line);
+    padding:8px 14px;font-size:14px;margin-top:10px;
+  }
+  button.savebtn.on{background:var(--warn);color:#fff;border-color:transparent}
   button.back{
     background:var(--card);color:var(--ink);border:1px solid var(--line);
     padding:8px 14px;font-size:14px;margin:0 0 12px;box-shadow:var(--shadow);
@@ -172,6 +177,7 @@
     <h1>MCQ Practice</h1>
     <p class="sub">Choose how you want to study.</p>
     <button class="mode" id="modePractice"><b>Practice</b><span>All questions on one page. Scroll down and tap an option to see instantly if it is right or wrong.</span></button>
+    <button class="mode" id="modeRevise"><b>Revise <i id="saveCount" style="font-style:normal;color:var(--accent)"></i></b><span>Questions you saved with the ☆ Save button. Practise them again here.</span></button>
     <button class="mode" id="modeAnswers"><b>Answers</b><span>Browse every week's questions with the correct answers already shown in green.</span></button>
     <button class="mode" id="modeTest"><b>Test</b><span>Timed exam. Answer freely and see your score at the end.</span></button>
   </section>
@@ -235,6 +241,14 @@
       <button class="hidden" id="nextSec">Next week →</button>
     </div>
     <button class="full ghost" id="pFinish">Finish &amp; see overall result</button>
+    <button class="full ghost" data-home style="margin-top:10px">Back to home</button>
+  </section>
+
+  <!-- REVISE (saved questions) -->
+  <section id="revise" class="hidden">
+    <div class="toprow"><button class="back" id="backRevise">← Back</button><button class="back" data-home>Home</button></div>
+    <div class="secTitle" id="revTitle"></div>
+    <div id="reviseList"></div>
     <button class="full ghost" data-home style="margin-top:10px">Back to home</button>
   </section>
 
@@ -530,7 +544,7 @@ function defaultMinutes(n){
   return Math.max(1, Math.round(n * FULL_EXAM_MINUTES / FULL_EXAM_QUESTIONS));
 }
 function show(id){
-  ["home","setup","practice","answers","exam","result","review"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+  ["home","setup","practice","answers","revise","exam","result","review"].forEach(s => $(s).classList.toggle("hidden", s !== id));
   window.scrollTo(0, 0);
 }
 function pad(n){ return String(n).padStart(2, "0"); }
@@ -541,6 +555,7 @@ function fmt(sec){
 function makeItem(item){
   return {
     q: item.q,
+    key: qKey(item),
     opts: shuffleOpts(item.o.map((t, i) => ({ text: t, correct: i === item.a }))),
     chosen: null
   };
@@ -737,7 +752,7 @@ function paintCard(ref){
   }
 }
 
-function buildCard(item, num){
+function buildCard(item, num, onAnswer){
   const card = document.createElement("div");
   card.className = "card qcard";
   const q = document.createElement("p");
@@ -759,13 +774,14 @@ function buildCard(item, num){
       if(item.chosen !== null) return;   // first answer is final
       item.chosen = i;
       paintCard(ref);
-      updatePracticeStats();
+      (onAnswer || updatePracticeStats)();
     };
     optBtns.push(b);
     card.appendChild(b);
   });
   const verdict = document.createElement("div");
   card.appendChild(verdict);
+  card.appendChild(makeSaveBtn(item.key));
   const ref = { item, card, optBtns, verdict };
   paintCard(ref);
   return ref;
@@ -851,6 +867,54 @@ $("nextSec").onclick = () => {
 $("pFinish").onclick = () => finish();
 $("pEnd").onclick = () => finish();
 
+/* ---------- saved questions (Revise) ---------- */
+const SAVE_KEY = "mcq_revise_saved_v1";
+let saved = new Set();
+try{ saved = new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || "[]")); }catch(e){}
+
+function qKey(item){ return item.w + "|" + item.q; }
+function persistSaved(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify([...saved])); }catch(e){}
+}
+function updateSavedCount(){
+  $("saveCount").textContent = saved.size ? "(" + saved.size + ")" : "";
+}
+function makeSaveBtn(key){
+  const b = document.createElement("button");
+  b.className = "savebtn";
+  const paint = () => {
+    const on = saved.has(key);
+    b.textContent = on ? "★ Saved for revision" : "☆ Save for revision";
+    b.classList.toggle("on", on);
+  };
+  b.onclick = () => {
+    if(saved.has(key)) saved.delete(key); else saved.add(key);
+    persistSaved();
+    paint();
+    updateSavedCount();
+  };
+  paint();
+  return b;
+}
+
+function renderRevise(){
+  const items = QUESTIONS.filter(q => saved.has(qKey(q)));
+  $("revTitle").textContent = "Revise · " + items.length + " saved question" + (items.length === 1 ? "" : "s");
+  const list = $("reviseList");
+  list.innerHTML = "";
+  if(!items.length){
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "Nothing saved yet. Tap ☆ Save for revision under any question in Practice, Answers or Review.";
+    list.appendChild(e);
+    return;
+  }
+  items.map(makeItem).forEach((it, i) => list.appendChild(buildCard(it, i + 1, () => {}).card));
+}
+$("modeRevise").onclick = () => { renderRevise(); show("revise"); };
+$("backRevise").onclick = () => show("home");
+updateSavedCount();
+
 /* ---------- answers viewer (week-wise answer key) ---------- */
 let ansWeek = 0;
 
@@ -895,6 +959,7 @@ function renderAnswers(){
     v.className = "verdict good";
     v.textContent = "Correct answer: " + String.fromCharCode(65 + item.a) + ". " + item.o[item.a];
     card.appendChild(v);
+    card.appendChild(makeSaveBtn(qKey(item)));
     list.appendChild(card);
   });
 
@@ -1068,6 +1133,7 @@ function renderReview(){
       row.append(k, t);
       card.appendChild(row);
     });
+    card.appendChild(makeSaveBtn(item.key));
     list.appendChild(card);
   });
   if(!shown){
