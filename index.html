@@ -157,6 +157,7 @@
   .weeks{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
   .weeks .chip{min-width:0}
   .linkbtn{background:transparent;color:var(--accent);padding:6px 4px;font-size:14px}
+  .toprow{display:flex;gap:8px;flex-wrap:wrap}
   button.back{
     background:var(--card);color:var(--ink);border:1px solid var(--line);
     padding:8px 14px;font-size:14px;margin:0 0 12px;box-shadow:var(--shadow);
@@ -176,7 +177,7 @@
 
   <!-- SETUP -->
   <section id="setup" class="card hidden">
-    <button class="back" id="backTopSetup">← Back</button>
+    <div class="toprow"><button class="back" id="backTopSetup">← Back</button><button class="back" data-home>Home</button></div>
     <h1 id="setupTitle">Test</h1>
     <p class="sub" id="setupSub"></p>
 
@@ -213,7 +214,7 @@
 
   <!-- PRACTICE (all questions of a week / the random set on one scrolling page) -->
   <section id="practice" class="hidden">
-    <button class="back" id="backPractice">← Back</button>
+    <div class="toprow"><button class="back" id="backPractice">← Back</button><button class="back" data-home>Home</button></div>
     <div class="bar">
       <div class="count" id="pCount"></div>
       <div class="pscore"><span class="good" id="pC">0</span> correct · <span class="bad" id="pW">0</span> wrong</div>
@@ -233,11 +234,12 @@
       <button class="hidden" id="nextSec">Next week →</button>
     </div>
     <button class="full ghost" id="pFinish">Finish &amp; see overall result</button>
+    <button class="full ghost" data-home style="margin-top:10px">Back to home</button>
   </section>
 
   <!-- EXAM -->
   <section id="exam" class="hidden">
-    <button class="back" id="backExam">← Back</button>
+    <div class="toprow"><button class="back" id="backExam">← Back</button><button class="back" data-home>Home</button></div>
     <div class="bar">
       <div class="timer" id="timer">00:00:00</div>
       <div class="count" id="count"></div>
@@ -261,7 +263,10 @@
   <section id="review" class="hidden">
     <div class="bar">
       <h2 style="margin:0">Review</h2>
-      <button class="ghost" id="revBack" style="padding:8px 12px">← Back</button>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" id="revBack" style="padding:8px 12px">← Back</button>
+        <button class="ghost" data-home style="padding:8px 12px">Home</button>
+      </div>
     </div>
     <div class="chips" id="chips"></div>
     <div id="revList"></div>
@@ -290,7 +295,7 @@
 
   <!-- RESULT -->
   <section id="result" class="card hidden">
-    <button class="back" id="backResult">← Back</button>
+    <div class="toprow"><button class="back" id="backResult">← Back</button><button class="back" data-home>Home</button></div>
     <h1>Result</h1>
     <div class="big" id="scoreBig"></div>
     <div class="hint" id="timeUsed"></div>
@@ -586,13 +591,10 @@ $("startBtn").onclick = () => {
 
   /* ----- Practice: build sections, everything shown on a scrolling page ----- */
   if(mode === 'practice'){
-    if(weekWise()){
+    practiceWeekMode = weekWise();
+    if(practiceWeekMode){
       const weeks = [...selectedWeeks].sort((a, b) => a - b);
-      sections = weeks.map(w => ({
-        title: "Week " + w,
-        short: "Week " + w,
-        items: QUESTIONS.filter(q => q.w === w).map(makeItem)
-      }));
+      sections = weeks.map(makeWeekSection);
     } else {
       let n = parseInt($("numQ").value, 10);
       if(!(n > 0)) n = Math.min(RANDOM_PRACTICE_DEFAULT, src.length);
@@ -651,6 +653,28 @@ $("backBtn").onclick = () => show("home");
 /* ---------- practice mode (one scrolling page per week / random set) ---------- */
 let sections = [];
 let secIdx = 0;
+let practiceWeekMode = false;
+
+function makeWeekSection(w){
+  return {
+    w: w,
+    title: "Week " + w,
+    short: "Week " + w,
+    items: QUESTIONS.filter(q => q.w === w).map(makeItem)
+  };
+}
+// Jump to any week's page (week 12 → week 0 wraps around). A week not opened yet is created on the fly.
+function gotoWeek(w){
+  let idx = sections.findIndex(s => s.w === w);
+  if(idx === -1){
+    sections.push(makeWeekSection(w));
+    idx = sections.length - 1;
+    paper = sections.flatMap(s => s.items);
+  }
+  secIdx = idx;
+  renderSection();
+  window.scrollTo(0, 0);
+}
 let cardRefs = [];   // per question in current section: { item, card, optBtns, verdict }
 
 function paintCard(ref){
@@ -720,27 +744,36 @@ function renderSection(){
   const sec = sections[secIdx];
   $("secTitle").textContent = sec.title + " · " + sec.items.length + " questions";
 
-  // section switcher (only when more than one week was picked)
+  // week switcher (week-wise practice only): all 13 weeks
   const chips = $("secChips");
   chips.innerHTML = "";
-  chips.classList.toggle("hidden", sections.length < 2);
-  sections.forEach((s, i) => {
-    const b = document.createElement("button");
-    b.className = "chip" + (i === secIdx ? " on" : "");
-    b.textContent = s.short;
-    b.onclick = () => { secIdx = i; renderSection(); window.scrollTo(0, 0); };
-    chips.appendChild(b);
-  });
+  chips.classList.toggle("hidden", !practiceWeekMode);
+  if(practiceWeekMode){
+    WEEKS.forEach(w => {
+      const b = document.createElement("button");
+      b.className = "chip" + (w === sec.w ? " on" : "");
+      b.textContent = "Week " + w;
+      b.onclick = () => gotoWeek(w);
+      chips.appendChild(b);
+    });
+  }
 
   const list = $("pList");
   list.innerHTML = "";
   cardRefs = sec.items.map((item, i) => buildCard(item, i + 1));
   cardRefs.forEach(r => list.appendChild(r.card));
 
-  $("prevSec").classList.toggle("hidden", sections.length < 2);
-  $("nextSec").classList.toggle("hidden", sections.length < 2);
-  $("prevSec").disabled = secIdx === 0;
-  $("nextSec").disabled = secIdx === sections.length - 1;
+  $("prevSec").classList.toggle("hidden", !practiceWeekMode);
+  $("nextSec").classList.toggle("hidden", !practiceWeekMode);
+  if(practiceWeekMode){
+    const i = WEEKS.indexOf(sec.w);
+    const pw = WEEKS[(i - 1 + WEEKS.length) % WEEKS.length];
+    const nw = WEEKS[(i + 1) % WEEKS.length];
+    $("prevSec").textContent = "← Week " + pw;
+    $("nextSec").textContent = "Next: Week " + nw + " →";
+    $("prevSec").disabled = false;
+    $("nextSec").disabled = false;
+  }
 
   updatePracticeStats();
 }
@@ -776,8 +809,14 @@ function updatePracticeStats(){
   }
 }
 
-$("prevSec").onclick = () => { if(secIdx > 0){ secIdx--; renderSection(); window.scrollTo(0, 0); } };
-$("nextSec").onclick = () => { if(secIdx < sections.length - 1){ secIdx++; renderSection(); window.scrollTo(0, 0); } };
+$("prevSec").onclick = () => {
+  const i = WEEKS.indexOf(sections[secIdx].w);
+  gotoWeek(WEEKS[(i - 1 + WEEKS.length) % WEEKS.length]);
+};
+$("nextSec").onclick = () => {
+  const i = WEEKS.indexOf(sections[secIdx].w);
+  gotoWeek(WEEKS[(i + 1) % WEEKS.length]);
+};
 $("pFinish").onclick = () => finish();
 $("pEnd").onclick = () => finish();
 
@@ -967,6 +1006,16 @@ $("backResult").onclick = () => {
   // Practice: return to the page you were scrolling. Test: it is over, so go to setup.
   if(mode === 'practice') show("practice"); else show("setup");
 };
+
+/* Home button on every page */
+document.querySelectorAll("[data-home]").forEach(b => {
+  b.onclick = () => {
+    clearInterval(tick);
+    $("palModal").classList.add("hidden");
+    $("confirmModal").classList.add("hidden");
+    show("home");
+  };
+});
 
 initSetup();
 </script>
