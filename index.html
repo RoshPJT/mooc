@@ -6,24 +6,33 @@
 <title>MCQ Practice</title>
 <style>
   :root{
-    --bg:#f3f5f7; --card:#ffffff; --ink:#18212b; --muted:#5d6b7a; --line:#d8dee5;
-    --accent:#1f5eff; --accent-ink:#ffffff; --good:#12805c; --bad:#c2352b; --warn:#a96a00;
+    --bg:#fff0f5; --card:#ffffff; --ink:#3b1f2e; --muted:#8d6577; --line:#f8d3e1;
+    --accent:#e8508a; --accent2:#ff8fb8; --accent-ink:#ffffff;
+    --good:#0e9f6e; --bad:#d62839; --warn:#e8820c;
+    --page:#ffc6dc;
+    --shadow:0 6px 20px rgba(226,80,138,.14);
+    --grad:linear-gradient(135deg,#ec5b94,#ff8fb8);
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#10151b; --card:#19212a; --ink:#e8edf2; --muted:#9aa8b6; --line:#2c3844;
-      --accent:#5b8cff; --accent-ink:#0b1220; --good:#3fc796; --bad:#ff7a6e; --warn:#e0a53a; }
+    :root{ --bg:#2a1220; --card:#3a1a2d; --ink:#ffeaf3; --muted:#d0a2b8; --line:#5a2c45;
+      --accent:#ff7eb0; --accent2:#ffa8c9; --accent-ink:#3b1020;
+      --good:#34d399; --bad:#ff7b80; --warn:#fbbf4a;
+      --page:#2a1220;
+      --shadow:0 6px 20px rgba(0,0,0,.35);
+      --grad:linear-gradient(135deg,#ff7eb0,#ffa8c9); }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{
-    background:var(--bg); color:var(--ink);
+    background:var(--page) fixed; background-color:var(--bg); color:var(--ink);
+    min-height:100vh;
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     font-size:16px; line-height:1.5;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .wrap{max-width:720px;margin:0 auto;padding:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
-  h1{font-size:22px;margin:0 0 4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  h1{font-size:24px;margin:0 0 4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
   h2{font-size:18px;margin:0 0 12px}
   p.sub{color:var(--muted);margin:0 0 18px}
   label{display:block;font-weight:600;margin:16px 0 6px}
@@ -38,8 +47,11 @@
   .check input{width:20px;height:20px}
   button{
     font:inherit;font-weight:600;border:0;border-radius:10px;padding:14px 18px;cursor:pointer;
-    background:var(--accent);color:var(--accent-ink);
+    background:var(--grad);color:var(--accent-ink);
+    transition:transform .08s ease, filter .15s ease;
   }
+  button:not(:disabled):hover{filter:brightness(1.06)}
+  button:not(:disabled):active{transform:scale(.98)}
   button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
   button.danger{background:var(--bad);color:#fff}
   button:disabled{opacity:.4;cursor:default}
@@ -48,7 +60,8 @@
 
   /* exam bar */
   .bar{
-    position:sticky;top:0;z-index:5;background:var(--bg);
+    position:sticky;top:0;z-index:5;background:color-mix(in srgb, var(--page) 92%, transparent);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
     padding:calc(env(safe-area-inset-top) + 8px) 0 8px;
     display:flex;align-items:center;justify-content:space-between;gap:8px;
   }
@@ -56,7 +69,7 @@
   .timer.low{color:var(--bad)}
   .count{color:var(--muted);font-size:14px}
   .progress{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
-  .progress i{display:block;height:100%;background:var(--accent);width:0}
+  .progress i{display:block;height:100%;background:var(--grad);width:0;transition:width .3s ease}
 
   .qtext{font-size:18px;font-weight:600;margin:0 0 16px;white-space:pre-wrap}
   .opt{
@@ -79,7 +92,7 @@
   /* palette */
   .palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin:12px 0}
   .pal{padding:10px 0;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:8px;font-weight:600}
-  .pal.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .pal.done{background:var(--grad);border-color:transparent;color:var(--accent-ink)}
   .pal.cur{outline:3px solid var(--warn);outline-offset:1px}
 
   /* result */
@@ -128,7 +141,7 @@
   /* review */
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
   .chip{padding:8px 12px;border-radius:999px;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:14px}
-  .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .chip.on{background:var(--grad);color:var(--accent-ink);border-color:transparent}
   .rev{margin-bottom:14px;border-left-width:6px}
   .rev.ok{border-left-color:var(--good)}
   .rev.bad{border-left-color:var(--bad)}
@@ -144,6 +157,10 @@
   .weeks{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
   .weeks .chip{min-width:0}
   .linkbtn{background:transparent;color:var(--accent);padding:6px 4px;font-size:14px}
+  button.back{
+    background:var(--card);color:var(--ink);border:1px solid var(--line);
+    padding:8px 14px;font-size:14px;margin:0 0 12px;box-shadow:var(--shadow);
+  }
 </style>
 </head>
 <body>
@@ -159,6 +176,7 @@
 
   <!-- SETUP -->
   <section id="setup" class="card hidden">
+    <button class="back" id="backTopSetup">← Back</button>
     <h1 id="setupTitle">Test</h1>
     <p class="sub" id="setupSub"></p>
 
@@ -195,6 +213,7 @@
 
   <!-- PRACTICE (all questions of a week / the random set on one scrolling page) -->
   <section id="practice" class="hidden">
+    <button class="back" id="backPractice">← Back</button>
     <div class="bar">
       <div class="count" id="pCount"></div>
       <div class="pscore"><span class="good" id="pC">0</span> correct · <span class="bad" id="pW">0</span> wrong</div>
@@ -218,6 +237,7 @@
 
   <!-- EXAM -->
   <section id="exam" class="hidden">
+    <button class="back" id="backExam">← Back</button>
     <div class="bar">
       <div class="timer" id="timer">00:00:00</div>
       <div class="count" id="count"></div>
@@ -241,7 +261,7 @@
   <section id="review" class="hidden">
     <div class="bar">
       <h2 style="margin:0">Review</h2>
-      <button class="ghost" id="revBack" style="padding:8px 12px">Back to result</button>
+      <button class="ghost" id="revBack" style="padding:8px 12px">← Back</button>
     </div>
     <div class="chips" id="chips"></div>
     <div id="revList"></div>
@@ -270,6 +290,7 @@
 
   <!-- RESULT -->
   <section id="result" class="card hidden">
+    <button class="back" id="backResult">← Back</button>
     <h1>Result</h1>
     <div class="big" id="scoreBig"></div>
     <div class="hint" id="timeUsed"></div>
@@ -931,9 +952,21 @@ $("reviewBtn").onclick = () => {
 };
 $("revBack").onclick = () => show("result");
 
-window.addEventListener("beforeunload", e => {
-  if(!$("exam").classList.contains("hidden") || !$("practice").classList.contains("hidden")){ e.preventDefault(); e.returnValue = ""; }
-});
+/* ---------- back buttons (each goes to the previous page) ---------- */
+$("backTopSetup").onclick = () => show("home");
+$("backPractice").onclick = () => {
+  show("setup");
+};
+$("backExam").onclick = () => {
+  clearInterval(tick);
+  $("palModal").classList.add("hidden");
+  $("confirmModal").classList.add("hidden");
+  show("setup");
+};
+$("backResult").onclick = () => {
+  // Practice: return to the page you were scrolling. Test: it is over, so go to setup.
+  if(mode === 'practice') show("practice"); else show("setup");
+};
 
 initSetup();
 </script>
